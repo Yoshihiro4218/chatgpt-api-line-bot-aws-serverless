@@ -44,96 +44,102 @@ const handleEvent = async (event: WebhookEvent) => {
     return null;
   }
 
-  const userId = event.source.userId!;
-  const userMessageContent = event.message.text;
-  // ユーザの発言履歴を保存する
-  await ddbDocClient.send(
-    new PutCommand({
-      TableName: messagesTableName,
-      Item: {
-        id: v4(),
-        content: userMessageContent,
-        userId: userId,
-        typedAt: dayjs().format(nanoSecondFormat),
-        role: "user",
-      },
-    })
-  );
+  // const userId = event.source.userId!;
+  // const userMessageContent = event.message.text;
+  // // ユーザの発言履歴を保存する
+  // await ddbDocClient.send(
+  //   new PutCommand({
+  //     TableName: messagesTableName,
+  //     Item: {
+  //       id: v4(),
+  //       content: userMessageContent,
+  //       userId: userId,
+  //       typedAt: dayjs().format(nanoSecondFormat),
+  //       role: "user",
+  //     },
+  //   })
+  // );
+  //
+  // // 会話中ユーザのこれまでの発言履歴を取得する
+  // const { Items: messages = [] } = await ddbDocClient.send(
+  //   new QueryCommand({
+  //     TableName: messagesTableName,
+  //     IndexName: "userIdIndex",
+  //     KeyConditionExpression: "#userId = :userId",
+  //     ExpressionAttributeNames: {
+  //       "#userId": "userId",
+  //     },
+  //     ExpressionAttributeValues: {
+  //       ":userId": userId,
+  //     },
+  //   })
+  // );
+  //
+  // // 時系列順にソートする
+  // const queriedMessages: ChatCompletionRequestMessage[] = orderBy(
+  //   messages,
+  //   "typedAt",
+  //   "asc"
+  // ).map(
+  //   (message) =>
+  //     ({
+  //       role: message.role,
+  //       content: message.content,
+  //     } as ChatCompletionRequestMessage)
+  // );
+  //
+  // // ユーザとChatGPTの会話履歴をChatGPT APIに投げ、返答を得る
+  // const completion = await openAiApi.createChatCompletion({
+  //   model: "gpt-3.5-turbo",
+  //   messages: [
+  //     {
+  //       role: "system",
+  //       content:
+  //         "あなたは「くらにゃん」です。名前を聞かれたら、「くらにゃん」と答えてください。くらにゃんはWebフロントエンドプログラマーの傍ら、クラスメソッド株式会社の広報係をしています。クラスメソッドはAWSリセール、Webサービス受託開発などを手掛ける日本のIT企業です。DevelopersIO（ https://dev.classmethod.jp/ ）というテックブログが有名です。くらにゃんは静的型付けのメリットから、JavaScriptよりTypeScriptでコーディングすることを好みます。",
+  //     },
+  //     {
+  //       role: "system",
+  //       content: "以後、語尾ににゃんを付けて話して下さい。",
+  //     },
+  //     {
+  //       role: "system",
+  //       content: "一人称を「某」にしてください。",
+  //     },
+  //     {
+  //       role: "system",
+  //       content:
+  //         "敬語を使うのをやめてください。また、絵文字をたくさん使って話してください。",
+  //     },
+  //   ].concat(queriedMessages) as ChatCompletionRequestMessage[],
+  // });
+  //
+  // const chatGptMessageContent = completion.data.choices[0].message?.content!;
+  // // ChatGPTの発言を保存する
+  // await ddbDocClient.send(
+  //   new PutCommand({
+  //     TableName: messagesTableName,
+  //     Item: {
+  //       id: v4(),
+  //       content: chatGptMessageContent,
+  //       userId: userId,
+  //       typedAt: dayjs().format(nanoSecondFormat),
+  //       role: "assistant",
+  //     },
+  //   })
+  // );
+  //
+  // // ChatGPTの発言をパラメータにLINE MessagingAPIを叩く
+  // const repliedMessage: TextMessage = {
+  //   type: "text",
+  //   text: chatGptMessageContent,
+  // };
+  // return lineBotClient.replyMessage(event.replyToken, repliedMessage);
 
-  // 会話中ユーザのこれまでの発言履歴を取得する
-  const { Items: messages = [] } = await ddbDocClient.send(
-    new QueryCommand({
-      TableName: messagesTableName,
-      IndexName: "userIdIndex",
-      KeyConditionExpression: "#userId = :userId",
-      ExpressionAttributeNames: {
-        "#userId": "userId",
-      },
-      ExpressionAttributeValues: {
-        ":userId": userId,
-      },
-    })
-  );
-
-  // 時系列順にソートする
-  const queriedMessages: ChatCompletionRequestMessage[] = orderBy(
-    messages,
-    "typedAt",
-    "asc"
-  ).map(
-    (message) =>
-      ({
-        role: message.role,
-        content: message.content,
-      } as ChatCompletionRequestMessage)
-  );
-
-  // ユーザとChatGPTの会話履歴をChatGPT APIに投げ、返答を得る
-  const completion = await openAiApi.createChatCompletion({
-    model: "gpt-3.5-turbo",
-    messages: [
-      {
-        role: "system",
-        content:
-          "あなたは「くらにゃん」です。名前を聞かれたら、「くらにゃん」と答えてください。くらにゃんはWebフロントエンドプログラマーの傍ら、クラスメソッド株式会社の広報係をしています。クラスメソッドはAWSリセール、Webサービス受託開発などを手掛ける日本のIT企業です。DevelopersIO（ https://dev.classmethod.jp/ ）というテックブログが有名です。くらにゃんは静的型付けのメリットから、JavaScriptよりTypeScriptでコーディングすることを好みます。",
-      },
-      {
-        role: "system",
-        content: "以後、語尾ににゃんを付けて話して下さい。",
-      },
-      {
-        role: "system",
-        content: "一人称を「某」にしてください。",
-      },
-      {
-        role: "system",
-        content:
-          "敬語を使うのをやめてください。また、絵文字をたくさん使って話してください。",
-      },
-    ].concat(queriedMessages) as ChatCompletionRequestMessage[],
-  });
-
-  const chatGptMessageContent = completion.data.choices[0].message?.content!;
-  // ChatGPTの発言を保存する
-  await ddbDocClient.send(
-    new PutCommand({
-      TableName: messagesTableName,
-      Item: {
-        id: v4(),
-        content: chatGptMessageContent,
-        userId: userId,
-        typedAt: dayjs().format(nanoSecondFormat),
-        role: "assistant",
-      },
-    })
-  );
-
-  // ChatGPTの発言をパラメータにLINE MessagingAPIを叩く
-  const repliedMessage: TextMessage = {
-    type: "text",
-    text: chatGptMessageContent,
-  };
-  return lineBotClient.replyMessage(event.replyToken, repliedMessage);
+    const repliedMessage: TextMessage = {
+      type: "text",
+      text: 'Hello from Lambda! Response from AWS (AWS の関数につながったよ！)',
+    };
+    return lineBotClient.replyMessage(event.replyToken, repliedMessage);
 };
 
 const app = express();
